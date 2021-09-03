@@ -206,7 +206,7 @@ class GeneratePDDL_Stationary :
         for t in range(self.width):
             res += "(time_next t{} t{})".format(t, t + 1)
         # positions
-        res += "(at pt{}pt{} agent1)".format(self.state.agent.position.x, self.state.agent.position.y)
+        res += "(at pt{}pt{} agent1 t0)".format(self.state.agent.position.x, self.state.agent.position.y)
         res += "(blocked pt{}pt{} t0)".format(self.state.agent.position.x, self.state.agent.position.y)
         blocked_set = set()
         for car in self.state.cars:
@@ -251,8 +251,10 @@ class GeneratePDDL_Stationary :
 
         return "(and (at obj11 apt1) (at obj23 pos1) (at obj13 apt1) (at obj21 pos1)))"
         '''
-        res = "(at pt{}pt{} agent1)".format(self.state.finish_position.x, self.state.finish_position.y)
-        return res
+        res = "(or"
+        for t in range(self.width):
+            res += " (at pt{}pt{} agent1 t{})".format(self.state.finish_position.x, self.state.finish_position.y, t)
+        return res + ")"
 
 
     def generateProblemPDDL(self) :
@@ -300,7 +302,7 @@ def generateDomainPDDLFile(gen):
     (time_next ?t1 ?t2) : t2 is the next timestamp after t1
     (blocked ?pt ?t) : The gridcell pt is occupied by a car and is "blocked" at time t.
     '''
-    gen.addPredicate(name="at", parameters=(("pt1" , "gridcell"), ("car", "car")))
+    gen.addPredicate(name="at", parameters=(("pt1" , "gridcell"), ("car", "car"), ("t", "timestamp")))
     gen.addPredicate(name="up_next", parameters=(("pt1" , "gridcell"), ("pt2", "gridcell")))
     gen.addPredicate(name="down_next", parameters=(("pt1" , "gridcell"), ("pt2", "gridcell")))
     gen.addPredicate(name="forward_next", parameters=(("pt1" , "gridcell"), ("pt2", "gridcell")))
@@ -327,24 +329,24 @@ def generateDomainPDDLFile(gen):
     '''
     gen.addAction(name="UP",
                   parameters=(("pt1", "gridcell"), ("pt2", "gridcell"), ("t1", "timestamp"), ("t2", "timestamp"), ("A", "agent")),
-                  precondition_string="(and (at ?pt1 ?A) (time ?t1) (up_next ?pt1 ?pt2) (time_next ?t1 ?t2) (not (blocked ?pt2 ?t2)))",
-                  effect_string= "(and (not (at ?pt1 ?A)) (at ?pt2 ?A) (not (time ?t1)) (time ?t2) (blocked ?pt2 ?t2))")
+                  precondition_string="(and (at ?pt1 ?A ?t1) (time ?t1) (up_next ?pt1 ?pt2) (time_next ?t1 ?t2) (not (blocked ?pt2 ?t2)))",
+                  effect_string= "(and (at ?pt2 ?A ?t2) (not (time ?t1)) (time ?t2) (blocked ?pt2 ?t2))")
     gen.addAction(name="DOWN",
                   parameters=(("pt1", "gridcell"), ("pt2", "gridcell"), ("t1", "timestamp"), ("t2", "timestamp"), ("A", "agent")),
-                  precondition_string="(and (at ?pt1 ?A) (time ?t1) (down_next ?pt1 ?pt2) (time_next ?t1 ?t2) (not (blocked ?pt2 ?t2)))",
-                  effect_string= "(and (not (at ?pt1 ?A)) (at ?pt2 ?A) (not (time ?t1)) (time ?t2) (blocked ?pt2 ?t2))")
+                  precondition_string="(and (at ?pt1 ?A ?t1) (time ?t1) (down_next ?pt1 ?pt2) (time_next ?t1 ?t2) (not (blocked ?pt2 ?t2)))",
+                  effect_string= "(and (at ?pt2 ?A ?t2) (not (time ?t1)) (time ?t2) (blocked ?pt2 ?t2))")
     gen.addAction(name="FORWARD",
                   parameters=(("pt1", "gridcell"), ("pt2", "gridcell"), ("t1", "timestamp"), ("t2", "timestamp"), ("A", "agent")),
-                  precondition_string="(and (at ?pt1 ?A) (time ?t1) (forward_next ?pt1 ?pt2) (time_next ?t1 ?t2) (not (blocked ?pt2 ?t2)))",
-                  effect_string= "(and (not (at ?pt1 ?A)) (at ?pt2 ?A) (not (time ?t1)) (time ?t2) (blocked ?pt2 ?t2))")
+                  precondition_string="(and (at ?pt1 ?A ?t1) (time ?t1) (forward_next ?pt1 ?pt2) (time_next ?t1 ?t2) (not (blocked ?pt2 ?t2)))",
+                  effect_string= "(and (at ?pt2 ?A ?t2) (not (time ?t1)) (time ?t2) (blocked ?pt2 ?t2))")
     gen.addAction(name="FORWARD2",
                   parameters=(("pt1", "gridcell"), ("pt2", "gridcell"), ("pt3", "gridcell"), ("t1", "timestamp"), ("t2", "timestamp"), ("A", "agent")),
-                  precondition_string="(and (at ?pt1 ?A) (time ?t1) (forward_next ?pt1 ?pt2) (forward_next ?pt2 ?pt3) (time_next ?t1 ?t2) (not (blocked ?pt2 ?t1)) (not (blocked ?pt3 ?t2)))",
-                  effect_string= "(and (not (at ?pt1 ?A)) (at ?pt3 ?A) (not (time ?t1)) (time ?t2) (blocked ?pt3 ?t2))")
+                  precondition_string="(and (at ?pt1 ?A ?t1) (time ?t1) (forward_next ?pt1 ?pt2) (forward_next ?pt2 ?pt3) (time_next ?t1 ?t2) (not (blocked ?pt2 ?t1)) (not (blocked ?pt3 ?t2)))",
+                  effect_string= "(and (at ?pt3 ?A ?t2) (not (time ?t1)) (time ?t2) (blocked ?pt3 ?t2))")
     gen.addAction(name="FORWARD3",
                   parameters=(("pt1", "gridcell"), ("pt2", "gridcell"), ("pt3", "gridcell"), ("pt4", "gridcell"), ("t1", "timestamp"), ("t2", "timestamp"), ("A", "agent")),
-                  precondition_string="(and (at ?pt1 ?A) (time ?t1) (forward_next ?pt1 ?pt2) (forward_next ?pt2 ?pt3) (forward_next ?pt3 ?pt4) (time_next ?t1 ?t2) (not (blocked ?pt2 ?t1)) (not (blocked ?pt3 ?t1)) (not (blocked ?pt4 ?t2)))",
-                  effect_string= "(and (not (at ?pt1 ?A)) (at ?pt4 ?A) (not (time ?t1)) (time ?t2) (blocked ?pt4 ?t2))")
+                  precondition_string="(and (at ?pt1 ?A ?t1) (time ?t1) (forward_next ?pt1 ?pt2) (forward_next ?pt2 ?pt3) (forward_next ?pt3 ?pt4) (time_next ?t1 ?t2) (not (blocked ?pt2 ?t1)) (not (blocked ?pt3 ?t1)) (not (blocked ?pt4 ?t2)))",
+                  effect_string= "(and (at ?pt4 ?A ?t2) (not (time ?t1)) (time ?t2) (blocked ?pt4 ?t2))")
 
     gen.generateDomainPDDL()
     pass
