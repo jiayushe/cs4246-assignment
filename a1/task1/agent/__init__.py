@@ -194,8 +194,29 @@ class GeneratePDDL_Stationary :
 
         return "(at apn1 apt2) (at tru1 pos1) (at obj11 pos1) (at obj12 pos1) (at obj13 pos1) (at tru2 pos2) (at obj21 pos2) (at obj22 pos2)
                 (at obj23 pos2) (in-city pos1 cit1) (in-city apt1 cit1) (in-city pos2 cit2) (in-city apt2 cit2)" 
-        '''  
-        return ''
+        '''
+        res = ''
+        # positions
+        res += "(at pt{}pt{} agent1)".format(self.state.agent.position.x, self.state.agent.position.y)
+        res += "(blocked pt{}pt{})".format(self.state.agent.position.x, self.state.agent.position.y)
+        for car in self.state.cars:
+            res += "(blocked pt{}pt{})".format(car.position.x, car.position.y)
+        # transitions
+        for y in range(self.num_lanes):
+            for x in range(1, self.width):
+                # up
+                if y != 0:
+                    res += "(up_next pt{}pt{} pt{}pt{})".format(x, y, x - 1, y - 1)
+                else:
+                    res += "(up_next pt{}pt{} pt{}pt{})".format(x, y, x - 1, y)
+                # down
+                if y != self.num_lanes - 1:
+                    res += "(down_next pt{}pt{} pt{}pt{})".format(x, y, x - 1, y + 1)
+                else:
+                    res += "(down_next pt{}pt{} pt{}pt{})".format(x, y, x - 1, y)
+                # forward
+                res += "(forward_next pt{}pt{} pt{}pt{})".format(x, y, x - 1, y)
+        return res
 
 
     def generateGoalString(self) :
@@ -212,8 +233,9 @@ class GeneratePDDL_Stationary :
         Example: The following statement adds goal string from https://github.com/pellierd/pddl4j/blob/master/pddl/logistics/p01.pddl  
 
         return "(and (at obj11 apt1) (at obj23 pos1) (at obj13 apt1) (at obj21 pos1)))"
-        '''    
-        return ''
+        '''
+        res = "(at pt{}pt{} agent1)".format(self.state.finish_position.x, self.state.finish_position.y)
+        return res
 
 
     def generateProblemPDDL(self) :
@@ -265,8 +287,6 @@ def generateDomainPDDLFile(gen):
     gen.addPredicate(name="forward_next", parameters=(("pt1" , "gridcell"), ("pt2", "gridcell")))
     gen.addPredicate(name="blocked", parameters=[("pt1" , "gridcell")] , isLastPredicate=True)
 
-
-
     '''
     FILL ME : Add the actions UP, DOWN, FORWARD with the help of gen.addAction() as follows :
 
@@ -284,6 +304,20 @@ def generateDomainPDDLFile(gen):
                   precondition_string="(and (at ?truck ?loc) (at ?pkg ?loc))", 
                   effect_string= "(and (not (at ?pkg ?loc)) (in ?pkg ?truck))")
     '''
+    gen.addAction(name="UP",
+                  parameters=(("pt1", "gridcell"), ("pt2", "gridcell"), ("A", "agent")),
+                  precondition_string="(and (at ?pt1 ?A) (up_next ?pt1 ?pt2) (not (blocked ?pt2)))",
+                  effect_string= "(and (not (at ?pt1 ?A)) (at ?pt2 ?A) (not (blocked ?pt1)) (blocked ?pt2))")
+    gen.addAction(name="DOWN",
+                  parameters=(("pt1", "gridcell"), ("pt2", "gridcell"), ("A", "agent")),
+                  precondition_string="(and (at ?pt1 ?A) (down_next ?pt1 ?pt2) (not (blocked ?pt2)))",
+                  effect_string= "(and (not (at ?pt1 ?A)) (at ?pt2 ?A) (not (blocked ?pt1)) (blocked ?pt2))")
+    gen.addAction(name="FORWARD",
+                  parameters=(("pt1", "gridcell"), ("pt2", "gridcell"), ("A", "agent")),
+                  precondition_string="(and (at ?pt1 agent1) (forward_next ?pt1 ?pt2) (not (blocked ?pt2)))",
+                  effect_string= "(and (not (at ?pt1 ?A)) (at ?pt2 ?A) (not (blocked ?pt1)) (blocked ?pt2))")
+
+    gen.generateDomainPDDL()
     pass
 
 def generateProblemPDDLFile(gen):
