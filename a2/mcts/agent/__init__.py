@@ -1,3 +1,7 @@
+# She Jiayu A0188314B T1
+# Liu Chaojie A0177842U T3
+# Collaborators None
+# Sources None
 from copy import deepcopy
 import gym
 from gym.utils import seeding
@@ -133,7 +137,12 @@ class MonteCarloTreeSearch:
         '''
         FILL ME : This function should implement the backpropation step of MCTS.
                   Update the values of relevant variables in Node Class to complete this function
-        '''        
+        '''
+        curr = node
+        while curr is not None:
+            curr.totalReward += reward
+            curr.numVisits += 1
+            curr = curr.parent
 
     def chooseBestActionNode(self, node, explorationValue):
         random = self.random
@@ -147,6 +156,12 @@ class MonteCarloTreeSearch:
                        All the nodes that have the largest value should be included in the list bestNodes.
                        We will then choose one of the nodes in this list at random as the best action node. 
             '''
+            curr_value = child.totalReward / child.numVisits + explorationValue * math.sqrt(math.log(node.numVisits) / child.numVisits)
+            if curr_value > bestValue:
+                bestValue = curr_value
+                bestNodes = [child]
+            elif curr_value == bestValue:
+                bestNodes.append(child)
         return random.choice(bestNodes)
 
 try:
