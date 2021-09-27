@@ -1,3 +1,7 @@
+# She Jiayu A0188314B T1
+# Liu Chaojie A0177842U T3
+# Collaborators None
+# Sources None
 import gym
 import gym_grid_driving
 from gym_grid_driving.envs.grid_driving import LaneSpec, Point, AgentState
@@ -173,10 +177,11 @@ def value_iteration(trn_fn, rwd_fn, gamma):
     value_fn : shape - (|S|), the optimal value function of the MDP
     policy : shape - (|S|),  the optimal policy of the MDP
     '''
-    value_fn = np.zeros(rwd_fn.shape[0])    
-    policy = np.zeros(rwd_fn.shape[0])
-
-    delta = 0.001                        
+    s = rwd_fn.shape[0]
+    a = trn_fn.shape[0]
+    value_fn = np.zeros(s)
+    policy = np.zeros(s)
+    delta = 0.001
     '''
     Fill up the code for Value Iteration here
 
@@ -187,7 +192,26 @@ def value_iteration(trn_fn, rwd_fn, gamma):
               matrix multiplications as is interferes with the evaluation script.
               Instead you can use "matmul()" function defined above
     '''
-    return value_fn, policy
+    value_fn_new = np.zeros(s)
+    policy_new = np.zeros(s)
+    # first pass
+    for i in range(s):
+        for j in range(a):
+            val = matmul(trn_fn[j][i], rwd_fn[i] + gamma * value_fn)
+            if val > value_fn_new[i]:
+                value_fn_new[i] = val
+                policy_new[i] = j
+    # loop
+    while max(abs(value_fn_new - value_fn)) > delta:
+        value_fn = value_fn_new
+        policy = policy_new
+        for i in range(s):
+            for j in range(a):
+                val = matmul(trn_fn[j][i], rwd_fn[i] + gamma * value_fn)
+                if val > value_fn_new[i]:
+                    value_fn_new[i] = val
+                    policy_new[i] = j
+    return value_fn, policy.astype("int32")
 
 
 def extractValueAndPolicy(env, lanes, width, gamma):
